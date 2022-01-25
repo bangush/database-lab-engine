@@ -354,6 +354,7 @@ build-image-swagger-latest:
       - test/**/*
       - Dockerfile.*
       - go.*
+      - .gitlab-ci.yml
   script:
     - bash test/1.synthetic.sh
     - bash test/2.logical_generic.sh
