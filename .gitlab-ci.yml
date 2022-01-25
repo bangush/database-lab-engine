@@ -58,7 +58,7 @@ build-binary-alpine:
     - apk add --update --no-cache make git
     - make build
 
-build-binary-client-dev:
+.build-binary-client-dev:
   <<: *only_feature
   stage: build-binary
   artifacts:
@@ -135,7 +135,7 @@ build-binary-client-rc:
     - apk update && apk upgrade && apk add --no-cache bash # TODO(anatoly): Remove dependency.
     - bash ./scripts/ci_docker_build_push.sh
 
-build-image-feature-server:
+.build-image-feature-server:
   <<: *build_image_definition
   <<: *only_feature
   variables:
@@ -146,7 +146,7 @@ build-image-feature-server:
     DOCKER_NAME: "registry.gitlab.com/postgres-ai/database-lab/dblab-server"
     TAGS: "${DOCKER_NAME}:${CI_COMMIT_REF_SLUG}"
 
-build-image-feature-ci-checker:
+.build-image-feature-ci-checker:
   <<: *build_image_definition
   <<: *only_feature
   variables:
@@ -157,7 +157,7 @@ build-image-feature-ci-checker:
     DOCKER_NAME: "registry.gitlab.com/postgres-ai/database-lab/dblab-ci-checker"
     TAGS: "${DOCKER_NAME}:${CI_COMMIT_REF_SLUG}"
 
-build-image-feature-client:
+.build-image-feature-client:
   <<: *build_image_definition
   <<: *only_feature
   variables:

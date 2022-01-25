@@ -10,16 +10,19 @@ export POSTGRES_VERSION="${POSTGRES_VERSION:-13}"
 export DLE_SERVER_PORT=${DLE_SERVER_PORT:-12345}
 export DLE_PORT_POOL_FROM=${DLE_PORT_POOL_FROM:-9000}
 export DLE_PORT_POOL_TO=${DLE_PORT_POOL_TO:-9100}
-export DLE_TEST_MOUNT_DIR="/var/lib/test/dblab_synthetic"
-export DLE_TEST_POOL_NAME="test_dblab_pool_synthetic"
+export DLE_TEST_MOUNT_DIR="/var/lib/test/dblab"
+export DLE_TEST_POOL_NAME="test_dblab_pool"
 
 DIR=${0%/*}
 
 ### Step 1. Prepare a machine with disk, Docker, and ZFS
 source "${DIR}/_prerequisites.ubuntu.sh"
-source "${DIR}/_zfs.file_synthetic.sh"
+source "${DIR}/_zfs.file.sh"
+
 
 ### Step 2. Configure and launch the Database Lab Engine
+
+## Prepare database data directory.
 sudo docker rm dblab_pg_initdb || true
 
 sudo docker run \
@@ -65,7 +68,6 @@ sudo docker exec dblab_pg_initdb pgbench -U postgres -i -s 10 test
 sudo docker stop dblab_pg_initdb
 sudo docker rm dblab_pg_initdb
 
-
 configDir="$HOME/.dblab/engine/configs"
 metaDir="$HOME/.dblab/engine/meta"
 
@@ -102,6 +104,7 @@ sudo docker run \
   --privileged \
   --publish ${DLE_SERVER_PORT}:${DLE_SERVER_PORT} \
   --volume /var/run/docker.sock:/var/run/docker.sock \
+  --volume ${DLE_TEST_MOUNT_DIR}/${DLE_TEST_POOL_NAME}/dump:${DLE_TEST_MOUNT_DIR}/${DLE_TEST_POOL_NAME}/dump \
   --volume ${DLE_TEST_MOUNT_DIR}:${DLE_TEST_MOUNT_DIR}/:rshared \
   --volume "${configDir}":/home/dblab/configs:ro \
   --volume "${metaDir}":/home/dblab/meta \
@@ -209,4 +212,4 @@ dblab clone list
 sudo docker stop ${DLE_SERVER_NAME}
 
 ### Finish. clean up
-source "${DIR}/_cleanup_synthetic.sh"
+source "${DIR}/_cleanup.sh"
