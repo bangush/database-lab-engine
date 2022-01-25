@@ -74,12 +74,21 @@ if [[ "${SOURCE_HOST}" = "172.17.0.1" ]]; then
     done
   fi
 
-  # Generate data in the test database using pgbench
-  # 1,000,000 accounts, ~0.14 GiB of data.
-  sudo docker exec postgres"${POSTGRES_VERSION}" pgbench -U postgres -i -s 10 test
+  check_data_existence(){
+    sudo docker exec postgres"${POSTGRES_VERSION}" psql -d "${SOURCE_DBNAME}" -U postgres --command 'select from pgbench_accounts' > /dev/null 2>&1
+    return $?
+  }
 
-  # Database info
-  sudo docker exec postgres"${POSTGRES_VERSION}" psql -U postgres -c "\l+ test"
+  generate_data(){
+    # Generate data in the test database using pgbench
+    # 1,000,000 accounts, ~0.14 GiB of data.
+    sudo docker exec postgres"${POSTGRES_VERSION}" pgbench -U postgres -i -s 10 test
+
+    # Database info
+    sudo docker exec postgres"${POSTGRES_VERSION}" psql -U postgres -c "\l+ test"
+  }
+
+  check_data_existence || generate_data
 fi
 
 ### Step 1. Prepare a machine with disk, Docker, and ZFS
