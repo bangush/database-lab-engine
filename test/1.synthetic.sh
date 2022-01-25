@@ -17,62 +17,54 @@ DIR=${0%/*}
 
 ### Step 1. Prepare a machine with disk, Docker, and ZFS
 source "${DIR}/_prerequisites.ubuntu.sh"
-
+source "${DIR}/_zfs.file_synthetic.sh"
 
 ### Step 2. Configure and launch the Database Lab Engine
+sudo docker rm dblab_pg_initdb || true
 
-## Prepare database data directory.
-export SYNTHETIC_DATA_DIR="${DLE_TEST_MOUNT_DIR}/${POSTGRES_VERSION}"
+sudo docker run \
+  --name dblab_pg_initdb \
+  --label dblab_sync \
+  --label dblab_test \
+  --env PGDATA=/var/lib/postgresql/pgdata \
+  --env POSTGRES_HOST_AUTH_METHOD=trust \
+  --volume ${DLE_TEST_MOUNT_DIR}/${DLE_TEST_POOL_NAME}/data:/var/lib/postgresql/pgdata \
+  --detach \
+  postgres:"${POSTGRES_VERSION}"-alpine
 
-if [[ ! -d ${SYNTHETIC_DATA_DIR} ]]; then
-  source "${DIR}/_zfs.file_synthetic.sh"
+check_database_readiness(){
+  sudo docker exec dblab_pg_initdb psql -U postgres -c 'select' > /dev/null 2>&1
+  return $?
+}
 
-  sudo docker rm dblab_pg_initdb || true
+for i in {1..300}; do
+  check_database_readiness && break || echo "test database is not ready yet"
+  sleep 1
+done
 
-  sudo docker run \
-    --name dblab_pg_initdb \
-    --label dblab_sync \
-    --label dblab_test \
-    --env PGDATA=/var/lib/postgresql/pgdata \
-    --env POSTGRES_HOST_AUTH_METHOD=trust \
-    --volume ${SYNTHETIC_DATA_DIR}/${DLE_TEST_POOL_NAME}/data:/var/lib/postgresql/pgdata \
-    --detach \
-    postgres:"${POSTGRES_VERSION}"-alpine
+check_database_readiness || (echo "test database is not ready" && exit 1)
 
-  check_database_readiness(){
-    sudo docker exec dblab_pg_initdb psql -U postgres -c 'select' > /dev/null 2>&1
-    return $?
-  }
+# Restart container explicitly after initdb to make sure that the server will not receive a shutdown request and queries will not be interrupted.
+sudo docker restart dblab_pg_initdb
 
-  for i in {1..300}; do
-    check_database_readiness && break || echo "test database is not ready yet"
-    sleep 1
-  done
+for i in {1..300}; do
+  check_database_readiness && break || echo "test database is not ready yet"
+  sleep 1
+done
 
-  check_database_readiness || (echo "test database is not ready" && exit 1)
+check_database_readiness || (echo "test database is not ready" && exit 1)
 
-  # Restart container explicitly after initdb to make sure that the server will not receive a shutdown request and queries will not be interrupted.
-  sudo docker restart dblab_pg_initdb
+# Create the test database
+sudo docker exec dblab_pg_initdb psql -U postgres -c 'create database test'
 
-  for i in {1..300}; do
-    check_database_readiness && break || echo "test database is not ready yet"
-    sleep 1
-  done
+# Generate data in the test database using pgbench
+# 1,000,000 accounts, ~0.14 GiB of data.
+sudo docker exec dblab_pg_initdb pgbench -U postgres -i -s 10 test
 
-  check_database_readiness || (echo "test database is not ready" && exit 1)
+# Stop and remove the container
+sudo docker stop dblab_pg_initdb
+sudo docker rm dblab_pg_initdb
 
-  # Create the test database
-  sudo docker exec dblab_pg_initdb psql -U postgres -c 'create database test'
-
-  # Generate data in the test database using pgbench
-  # 1,000,000 accounts, ~0.14 GiB of data.
-  sudo docker exec dblab_pg_initdb pgbench -U postgres -i -s 10 test
-
-  # Stop and remove the container
-  sudo docker stop dblab_pg_initdb
-  sudo docker rm dblab_pg_initdb
-
-fi
 
 configDir="$HOME/.dblab/engine/configs"
 metaDir="$HOME/.dblab/engine/meta"
@@ -91,7 +83,7 @@ yq eval -i '
   .server.port = env(DLE_SERVER_PORT) |
   .provision.portPool.from = env(DLE_PORT_POOL_FROM) |
   .provision.portPool.to = env(DLE_PORT_POOL_TO) |
-  .poolManager.mountDir = env(SYNTHETIC_DATA_DIR) |
+  .poolManager.mountDir = env(DLE_TEST_MOUNT_DIR) |
   del(.retrieval.jobs[] | select(. == "logicalDump")) |
   del(.retrieval.jobs[] | select(. == "logicalRestore")) |
   .databaseContainer.dockerImage = "postgresai/extended-postgres:" + strenv(POSTGRES_VERSION)
@@ -110,7 +102,7 @@ sudo docker run \
   --privileged \
   --publish ${DLE_SERVER_PORT}:${DLE_SERVER_PORT} \
   --volume /var/run/docker.sock:/var/run/docker.sock \
-  --volume ${SYNTHETIC_DATA_DIR}:${SYNTHETIC_DATA_DIR}/:rshared \
+  --volume ${DLE_TEST_MOUNT_DIR}:${DLE_TEST_MOUNT_DIR}/:rshared \
   --volume "${configDir}":/home/dblab/configs:ro \
   --volume "${metaDir}":/home/dblab/meta \
   --volume /sys/kernel/debug:/sys/kernel/debug:rw \
