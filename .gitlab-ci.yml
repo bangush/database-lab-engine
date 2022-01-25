@@ -44,7 +44,7 @@ lint:
     variables:
       - $CI_COMMIT_REF_SLUG != "master"
 
-build-binary-alpine:
+.build-binary-alpine:
   image: golang:1.17-alpine
   stage: build-binary
   only:
