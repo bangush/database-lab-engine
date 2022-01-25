@@ -44,7 +44,7 @@ lint:
     variables:
       - $CI_COMMIT_REF_SLUG != "master"
 
-.build-binary-alpine:
+build-binary-alpine:
   image: golang:1.17-alpine
   stage: build-binary
   only:
@@ -58,7 +58,7 @@ lint:
     - apk add --update --no-cache make git
     - make build
 
-.build-binary-client-dev:
+build-binary-client-dev:
   <<: *only_feature
   stage: build-binary
   artifacts:
@@ -135,7 +135,7 @@ build-binary-client-rc:
     - apk update && apk upgrade && apk add --no-cache bash # TODO(anatoly): Remove dependency.
     - bash ./scripts/ci_docker_build_push.sh
 
-.build-image-feature-server:
+build-image-feature-server:
   <<: *build_image_definition
   <<: *only_feature
   variables:
@@ -146,7 +146,7 @@ build-binary-client-rc:
     DOCKER_NAME: "registry.gitlab.com/postgres-ai/database-lab/dblab-server"
     TAGS: "${DOCKER_NAME}:${CI_COMMIT_REF_SLUG}"
 
-.build-image-feature-ci-checker:
+build-image-feature-ci-checker:
   <<: *build_image_definition
   <<: *only_feature
   variables:
@@ -157,7 +157,7 @@ build-binary-client-rc:
     DOCKER_NAME: "registry.gitlab.com/postgres-ai/database-lab/dblab-ci-checker"
     TAGS: "${DOCKER_NAME}:${CI_COMMIT_REF_SLUG}"
 
-.build-image-feature-client:
+build-image-feature-client:
   <<: *build_image_definition
   <<: *only_feature
   variables:
@@ -373,25 +373,25 @@ bash-test-10:
   variables:
     POSTGRES_VERSION: 10
 
-#bash-test-11:
-#  <<: *bash_test
-#  variables:
-#    POSTGRES_VERSION: 11
-#
-#bash-test-12:
-#  <<: *bash_test
-#  variables:
-#    POSTGRES_VERSION: 12
-#
-#bash-test-13:
-#  <<: *bash_test
-#  variables:
-#    POSTGRES_VERSION: 13
-#
-#bash-test-14:
-#  <<: *bash_test
-#  variables:
-#    POSTGRES_VERSION: 14
+bash-test-11:
+  <<: *bash_test
+  variables:
+    POSTGRES_VERSION: 11
+
+bash-test-12:
+  <<: *bash_test
+  variables:
+    POSTGRES_VERSION: 12
+
+bash-test-13:
+  <<: *bash_test
+  variables:
+    POSTGRES_VERSION: 13
+
+bash-test-14:
+  <<: *bash_test
+  variables:
+    POSTGRES_VERSION: 14
 
 integration-test:
   services:
