@@ -65,7 +65,7 @@ if [[ "${SOURCE_HOST}" = "172.17.0.1" ]]; then
   }
 
   check_data_existence
-  dataResult = $?
+  dataResult=$?
   if [[ $dataResult -ne 0 ]]; then
     # Generate data in the test database using pgbench
     # 1,000,000 accounts, ~0.14 GiB of data.
