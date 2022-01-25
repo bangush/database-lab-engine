@@ -75,7 +75,7 @@ if [[ "${SOURCE_HOST}" = "172.17.0.1" ]]; then
   fi
 
   check_data_existence(){
-    sudo docker exec postgres"${POSTGRES_VERSION}" psql -d "${SOURCE_DBNAME}" -U postgres --command 'select from pgbench_accounts' > /dev/null 2>&1
+    sudo docker exec postgres"${POSTGRES_VERSION}" psql -d test -U postgres --command 'select from pgbench_accounts' > /dev/null 2>&1
     return $?
   }
 
